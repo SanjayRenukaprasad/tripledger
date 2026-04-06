@@ -43,3 +43,23 @@ async def ask_budget_question(trip_data: dict, question: str) -> str:
         }]
     )
     return msg.content[0].text.strip()
+
+async def categorize_expense(description: str) -> str:
+    try:
+        msg = client.messages.create(
+            model="claude-sonnet-4-20250514",
+            max_tokens=50,
+            messages=[{
+                "role": "user",
+                "content": (
+                    "Categorize this travel expense into exactly one of: "
+                    "food, transport, accommodation, activities, shopping, other.\n"
+                    f"Expense: {description}\n"
+                    "Reply with just the category word, nothing else."
+                )
+            }]
+        )
+        return msg.content[0].text.strip().lower()
+    except Exception as e:
+        print(f"Claude error: {e}")
+        return "other"

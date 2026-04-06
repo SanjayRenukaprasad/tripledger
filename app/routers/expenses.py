@@ -18,17 +18,29 @@ def get_trip_or_404(trip_id: int, user: User, db: Session):
     return trip
 
 @router.post("", response_model=ExpenseResponse, status_code=201)
-def add_expense(trip_id: int, req: ExpenseCreate, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+async def add_expense(trip_id: int, req: ExpenseCreate, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
     trip = get_trip_or_404(trip_id, user, db)
+
+    # Convert currency
+    from app.services.currency import convert_amount
+    amount_converted = await convert_amount(req.amount, req.currency, trip.base_currency)
+
+    # AI categorization
+    from app.services.ai import categorize_expense
+    category = await categorize_expense(req.description)
+
     expense = Expense(
         description=req.description,
         amount=req.amount,
         currency=req.currency,
+        amount_converted=amount_converted,
+        category=category,
         paid_by=user.id,
         trip_id=trip.id
     )
     db.add(expense)
     db.flush()
+
     if req.splits:
         for s in req.splits:
             split = ExpenseSplit(
@@ -37,6 +49,7 @@ def add_expense(trip_id: int, req: ExpenseCreate, db: Session = Depends(get_db),
                 amount_owed=s.amount_owed
             )
             db.add(split)
+
     db.commit()
     db.refresh(expense)
     return expense

@@ -61,7 +61,8 @@ def get_trip_splits(db, trip_id: int) -> List[Dict]:
     Fetches all unsettled expense splits for a trip
     and formats them for the simplify_debts function.
     """
-    from app.models.expense import Expense, ExpenseSplit
+    from app.models.expense import Expense
+    from app.models.member import TripMember
 
     expenses = db.query(Expense).filter(Expense.trip_id == trip_id).all()
 
